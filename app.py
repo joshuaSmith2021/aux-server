@@ -1,7 +1,9 @@
 # Python standard libraries
+from base64 import urlsafe_b64encode
 import json
 import os
 import sqlite3
+from time import time
 
 # Third-party libraries
 from flask import Flask, redirect, request, url_for
@@ -12,6 +14,7 @@ from flask_login import (
     login_user,
     logout_user,
 )
+
 from oauthlib.oauth2 import WebApplicationClient
 import requests
 
@@ -25,6 +28,10 @@ GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET', None)
 GOOGLE_DISCOVERY_URL = (
     'https://accounts.google.com/.well-known/openid-configuration'
 )
+
+SPOTIFY_CLIENT_ID = os.environ.get('SPOTIFY_CLIENT_ID', None)
+SPOTIFY_CLIENT_SECRET = os.environ.get('SPOTIFY_CLIENT_SECRET', None)
+SPOTIFY_REDIRECT_URI = 'https://127.0.0.1:5000/spotifycallback'
 
 # Flask app setup
 app = Flask(__name__)
@@ -59,6 +66,7 @@ def index():
             '<p>Hello, {}! You\'re logged in! Email: {}</p>'
             '<div><p>Google Profile Picture:</p>'
             '<img src="{}" alt="Google profile pic"></img></div>'
+            '<a href="/link">Link Spotify</a>'
             '<a class="button" href="/logout">Logout</a>'.format(
                 current_user.name, current_user.email, current_user.profile_pic
             )
@@ -149,6 +157,65 @@ def callback():
     return redirect(url_for('index'))
 
 
+@app.route('/link')
+@login_required
+def link_spotify():
+    request_url = 'https://accounts.spotify.com/authorize'
+    redirect_uri = 'https://127.0.0.1:5000/spotifycallback'
+
+    scopes = ['user-read-playback-state', 'user-modify-playback-state']
+    scopes = '%20'.join(scopes)
+
+    url = '%s?client_id=%s&response_type=code&redirect_uri=%s&scope=%s' \
+          % (request_url, SPOTIFY_CLIENT_ID, redirect_uri, scopes)
+
+    return '<a href="%s">Link Spotify</a>' % url
+
+
+@app.route('/spotifycallback')
+@login_required
+def spotify_callback():
+    code = request.args.get('code', None)
+
+    if code is None:
+        return 'Error getting Spotify Code', 500
+
+    request_url = 'https://accounts.spotify.com/api/token'
+
+    client_and_secret = '%s:%s' % (SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET)
+    authorization = urlsafe_b64encode(client_and_secret.encode()).decode()
+
+    headers = {
+        'Authorization': 'Basic %s' % authorization,
+        'Content-Type': 'application/x-www-form-urlencoded'
+    }
+
+    data = {
+        'grant_type': 'authorization_code',
+        'code': code,
+        'redirect_uri': SPOTIFY_REDIRECT_URI
+    }
+
+    req = requests.post(request_url, headers=headers, data=data)
+
+    response = req.json()
+
+    refresh_token = response['refresh_token']
+    access_token = response['access_token']
+    expiration = int(time()) + response['expires_in']
+
+    current_user.update_tokens(refresh_token, access_token, expiration)
+
+    return code
+
+
+@app.route('/account')
+@login_required
+def account():
+    current_user.print_status()
+    return 'nice, maybe', 200
+
+
 @app.route('/logout')
 @login_required
 def logout():
@@ -158,4 +225,3 @@ def logout():
 
 if __name__ == '__main__':
     app.run(ssl_context='adhoc')
-
