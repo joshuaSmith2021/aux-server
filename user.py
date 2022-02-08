@@ -87,21 +87,6 @@ class User(UserMixin):
         return access_token
 
     @staticmethod
-    def get_uuid(user_id):
-        db = get_db()
-
-        query = [
-            'SELECT uuid',
-            'FROM user',
-            'WHERE id = "%s"' % user_id
-        ]
-
-        row = db.execute(' '.join(query)).fetchone()
-        user_uuid = row[0]
-
-        return user_uuid
-
-    @staticmethod
     def get_code_status(user_id):
         db = get_db()
 
@@ -156,6 +141,20 @@ class User(UserMixin):
 
         db.execute(' '.join(query))
         db.commit()
+
+    def get_uuid(self):
+        db = get_db()
+
+        query = [
+            'SELECT uuid',
+            'FROM user',
+            'WHERE id = "%s"' % self.id
+        ]
+
+        row = db.execute(' '.join(query)).fetchone()
+        user_uuid = row[0]
+
+        return user_uuid
 
     def update_access_token(self, access_token, expiration):
         db = get_db()
