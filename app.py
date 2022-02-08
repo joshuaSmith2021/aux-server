@@ -154,7 +154,7 @@ def callback():
     login_user(user)
 
     # Send user back to homepage
-    return redirect(url_for('index'))
+    return redirect('/dashboard')
 
 
 @app.route('/link')
@@ -206,7 +206,7 @@ def spotify_callback():
 
     current_user.update_tokens(refresh_token, access_token, expiration)
 
-    return code
+    return redirect('/dashboard')
 
 
 @app.route('/account')
@@ -227,14 +227,14 @@ def dashboard():
 @login_required
 def enable_code():
     current_user.set_code_status(1)
-    return redirect('/dashboard', code=302)
+    return redirect('/dashboard')
 
 
 @app.route('/disable_code')
 @login_required
 def disable_code():
     current_user.set_code_status(0)
-    return redirect('/dashboard', code=302)
+    return redirect('/dashboard')
 
 
 @app.route('/logout')
