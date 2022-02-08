@@ -63,10 +63,13 @@ def load_user(user_id):
 def index():
     if current_user.is_authenticated:
         return (
+            '<h1>try the <a href="/dashboard">dashboard</a></h1>'
+            '<h4>i made this homepage in about two minutes</h4>'
             '<p>Hello, {}! You\'re logged in! Email: {}</p>'
             '<div><p>Google Profile Picture:</p>'
             '<img src="{}" alt="Google profile pic"></img></div>'
             '<a href="/link">Link Spotify</a>'
+            '<a href="/dashboard">Dashboard</a>'
             '<a class="button" href="/logout">Logout</a>'.format(
                 current_user.name, current_user.email, current_user.profile_pic
             )
@@ -235,6 +238,12 @@ def enable_code():
 def disable_code():
     current_user.set_code_status(0)
     return redirect('/dashboard')
+
+
+@app.route('/generate_qr_code')
+@login_required
+def generate_qr_code():
+    return 'nice'
 
 
 @app.route('/logout')
