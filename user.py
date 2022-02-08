@@ -102,6 +102,26 @@ class User(UserMixin):
         return user_uuid
 
     @staticmethod
+    def get_code_status(user_id):
+        db = get_db()
+
+        query = [
+            'SELECT active',
+            'FROM user',
+            'WHERE id = "%s"' % user_id
+        ]
+
+        row = db.execute(' '.join(query)).fetchone()
+        active = row[0]
+
+        if active is None:
+            user = User.get(user_id)
+            user.set_code_status(0)
+            active = 0
+
+        return bool(active)
+
+    @staticmethod
     def get_access_token(user_id):
         # TODO: Get the access token for a user. If the token
         # should be refreshed, refresh it, update the database,
@@ -118,7 +138,7 @@ class User(UserMixin):
         access_token, expiration = db.execute(' '.join(query)).fetchone()
 
         if time() + 10 > expiration:
-            access_token = User.refresh_access_token()
+            access_token = User.refresh_access_token(user_id)
 
         return access_token
 
@@ -166,6 +186,23 @@ class User(UserMixin):
             'UPDATE user',
             'SET',
             'uuid = "%s"' % str(uuid4()),
+            'WHERE id = "%s"' % self.id
+        ]
+
+        db.execute(' '.join(query))
+        db.commit()
+
+    def set_code_status(self, status):
+        '''Status should be a 0 or 1. 1 represents True, meaning that the QR
+        code is active. 0 represents False, meaning that the code is disabled.
+        '''
+
+        db = get_db()
+
+        query = [
+            'UPDATE user',
+            'SET',
+            'active = %d' % status,
             'WHERE id = "%s"' % self.id
         ]
 

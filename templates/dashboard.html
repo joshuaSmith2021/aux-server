@@ -40,27 +40,30 @@
             <div class="col-md-4">
                 <h1 class="segoe">Enable/Disable</h1>
                 <p>
+                    {% if qr_active %}
                     Your QR code is currently open for people to queue songs.
                     If you want to temporarily disable your QR code, click
                     the button below. You can turn the code back on at any
                     time, and you won't have to print it back out.
                     <hr>
-                    <button class="btn btn-primary">Disable Code</button>
+                    <a href="/disable_code"><button class="btn btn-primary">Disable Code</button></a>
 
-                    <br><br>
+                    {% else %}
 
                     Your QR code is currently disabled, and people can't play
                     songs on your Spotify acocunt. You can click the button
                     below to allow users to queue songs, and, of course, you
                     can turn it off again at any time.
                     <hr>
-                    <button class="btn btn-primary">Enable Code</button>
+                    <a href="/enable_code"><button class="btn btn-primary">Enable Code</button></a>
+
+                    {% endif %}
                 </p>
             </div>
             <div class="col-md-4">
                 <h1 class="segoe">Print QR Code</h1>
                 <p>
-                    <a href="generate_qr_code/">Printable QR code</a>
+                    <a href="/generate_qr_code">Printable QR code</a>
                 </p>
             </div>
             <div class="col-md-4">
@@ -79,7 +82,7 @@
     <script>
 $('#regenerate').click(function() {
     if (confirm('Are you sure you want to regenerate your QR code? This will permanently disable all previous codes that you\'ve printed.')) {
-        alert('updating')
+        window.location.href = '/regenerate_qr'
     } else {
         alert('Your code was not updated. Your old codes still work.')
     }

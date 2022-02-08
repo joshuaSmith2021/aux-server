@@ -6,7 +6,7 @@ import sqlite3
 from time import time
 
 # Third-party libraries
-from flask import Flask, redirect, request, url_for
+from flask import Flask, redirect, request, url_for, render_template
 from flask_login import (
     LoginManager,
     current_user,
@@ -119,7 +119,7 @@ def callback():
         auth=(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET),
     )
 
-    # Parse the tokens!
+    # Parse the tokens
     client.parse_request_body_response(json.dumps(token_response.json()))
 
     # Now that you have tokens (yay) let's find and hit the URL
@@ -214,6 +214,27 @@ def spotify_callback():
 def account():
     current_user.print_status()
     return 'nice, maybe', 200
+
+
+@app.route('/dashboard')
+@login_required
+def dashboard():
+    code_status = User.get_code_status(current_user.id)
+    return render_template('dashboard.html', qr_active=code_status)
+
+
+@app.route('/enable_code')
+@login_required
+def enable_code():
+    current_user.set_code_status(1)
+    return redirect('/dashboard', code=302)
+
+
+@app.route('/disable_code')
+@login_required
+def disable_code():
+    current_user.set_code_status(0)
+    return redirect('/dashboard', code=302)
 
 
 @app.route('/logout')
