@@ -35,6 +35,19 @@ class User(UserMixin):
         return user
 
     @staticmethod
+    def get_user_id_from_uuid(user_uuid):
+        db = get_db()
+
+        user = db.execute(
+            'SELECT id FROM user WHERE uuid = "%s"' % user_uuid
+        ).fetchone()
+
+        if not user:
+            return None
+
+        return user[0]
+
+    @staticmethod
     def create(id_, name, email, profile_pic):
         db = get_db()
         db.execute(
@@ -154,6 +167,9 @@ class User(UserMixin):
         row = db.execute(' '.join(query)).fetchone()
         user_uuid = row[0]
 
+        if user_uuid is None:
+            user_uuid = self.refresh_uuid()
+
         return user_uuid
 
     def update_access_token(self, access_token, expiration):
@@ -181,15 +197,19 @@ class User(UserMixin):
     def refresh_uuid(self):
         db = get_db()
 
+        new_uuid = str(uuid4()).replace('-', '')
+
         query = [
             'UPDATE user',
             'SET',
-            'uuid = "%s"' % str(uuid4()),
+            'uuid = "%s"' % new_uuid,
             'WHERE id = "%s"' % self.id
         ]
 
         db.execute(' '.join(query))
         db.commit()
+
+        return new_uuid
 
     def set_code_status(self, status):
         '''Status should be a 0 or 1. 1 represents True, meaning that the QR

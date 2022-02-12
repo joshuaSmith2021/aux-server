@@ -1,21 +1,20 @@
 # Python standard libraries
 from base64 import urlsafe_b64encode
+from io import BytesIO
 import json
 import os
 import sqlite3
 from time import time
 
 # Third-party libraries
-from flask import Flask, redirect, request, url_for, render_template
-from flask_login import (
-    LoginManager,
-    current_user,
-    login_required,
-    login_user,
-    logout_user,
-)
+from flask import Flask, jsonify, redirect, request, url_for,\
+    render_template, send_file, after_this_request
+
+from flask_login import LoginManager, current_user, login_required, \
+    login_user, logout_user
 
 from oauthlib.oauth2 import WebApplicationClient
+import qrcode
 import requests
 
 # Internal imports
@@ -243,7 +242,24 @@ def disable_code():
 @app.route('/generate_qr_code')
 @login_required
 def generate_qr_code():
-    return 'nice'
+    img_io = BytesIO()
+
+    user_uuid = current_user.get_uuid()
+
+    aux_url = 'https://joshthings.com/auxcord.html?uuid=%s' % user_uuid
+    qr_code = qrcode.make(aux_url)
+    qr_code.save(img_io, 'JPEG', quality=70)
+
+    img_io.seek(0)
+
+    return send_file(img_io, mimetype='image/jpeg')
+
+
+@app.route('/regenerate_qr')
+@login_required
+def regenerate_qr_code():
+    current_user.refresh_uuid()
+    return redirect('/dashboard')
 
 
 @app.route('/logout')
@@ -251,6 +267,71 @@ def generate_qr_code():
 def logout():
     logout_user()
     return redirect(url_for('index'))
+
+
+@app.route('/search/<user_uuid>')
+def search_spotify_with_uuid(user_uuid):
+    '''uuid is a path parameter that represents the user whose Spotify
+    credentials should be used to search.
+
+    q is a query parameter that represents the query for the Spotify search.
+    '''
+
+    @after_this_request
+    def add_header(response):
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        return response
+
+    user_id = User.get_user_id_from_uuid(user_uuid)
+
+    if user_id is None:
+        return 'Invalid UUID', 400
+
+    token = User.get_access_token(user_id)
+
+    headers = {
+        'Authorization': 'Bearer %s' % token,
+        'Content-Type': 'application/json'
+    }
+
+    url = 'https://api.spotify.com/v1/search'
+    req = requests.get(url, headers=headers, params={
+        'q': request.args.get('q', 'Never gonna give you up'),
+        'type': ['track'],
+        'limit': 10
+    })
+
+    return jsonify(req.json())
+
+
+@app.route('/queue/<user_uuid>')
+def queue_song_with_uuid(user_uuid):
+    @after_this_request
+    def add_header(response):
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        return response
+
+    user_id = User.get_user_id_from_uuid(user_uuid)
+
+    if user_id is None:
+        return 'Invalid UUID', 400
+
+    token = User.get_access_token(user_id)
+
+    headers = {
+        'Authorization': 'Bearer %s' % token,
+        'Content-Type': 'application/json'
+    }
+
+    uri = request.args.get('uri', None)
+    if uri is None:
+        return 'Missing URI', 400
+
+    url = 'https://api.spotify.com/v1/me/player/queue?uri=%s' % uri
+
+    req = requests.post(url, headers=headers)
+
+    return req.text, req.status_code
 
 
 if __name__ == '__main__':
