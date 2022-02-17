@@ -60,6 +60,9 @@ def load_user(user_id):
 
 @app.route('/')
 def index():
+    return render_template('homepage.html',
+                           user_active=current_user.is_authenticated)
+
     if current_user.is_authenticated:
         return (
             '<h1>try the <a href="/dashboard">dashboard</a></h1>'
@@ -171,7 +174,7 @@ def link_spotify():
     url = '%s?client_id=%s&response_type=code&redirect_uri=%s&scope=%s' \
           % (request_url, SPOTIFY_CLIENT_ID, redirect_uri, scopes)
 
-    return '<a href="%s">Link Spotify</a>' % url
+    return redirect(url)
 
 
 @app.route('/spotifycallback')
@@ -222,7 +225,8 @@ def account():
 @login_required
 def dashboard():
     code_status = User.get_code_status(current_user.id)
-    return render_template('dashboard.html', qr_active=code_status)
+    return render_template('dashboard.html', qr_active=code_status,
+                           spotify_linked=current_user.spotify_connected())
 
 
 @app.route('/enable_code')

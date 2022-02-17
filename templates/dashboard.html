@@ -24,6 +24,10 @@
                 <a href="/dashboard" class="nav-link">Dashboard</a>
             </li>
 
+            <li class="nav-item">
+                <a href="/logout" class="nav-link">Logout</a>
+            </li>
+
             <!-- <li class="nav-item dropdown">
                 <a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Portfolio</a>
                 <div class="dropdown-menu">
@@ -36,11 +40,12 @@
 
     <div class="container-fluid pastel">
         <div class="container header py-4">
-            <h1 class="display-1 bebas">Aux Server</h1>
+            <h1 class="display-1 bebas">Auxpass</h1>
             <h2 class="display-4">User Settings</h2>
         </div>
     </div>
     <div class="container py-4">
+        {% if spotify_linked %}
         <div class="row">
             <div class="col-md-4">
                 <h1 class="segoe">Enable/Disable</h1>
@@ -83,6 +88,16 @@
                 </p>
             </div>
         </div>
+
+        {% else %}
+
+        <p>
+            It looks like you haven't linked your Spotify account.
+            <a href="/link">Please link your account</a> in order to utilize
+            Auxpass.
+        </p>
+
+        {% endif %}
     </div>
     <script>
 $('#regenerate').click(function() {

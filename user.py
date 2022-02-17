@@ -140,6 +140,19 @@ class User(UserMixin):
 
         return access_token
 
+    def spotify_connected(self):
+        db = get_db()
+
+        query = [
+            'SELECT refresh_token',
+            'FROM user',
+            'WHERE id = "%s"' % self.id
+        ]
+
+        row = db.execute(' '.join(query)).fetchone()
+
+        return row[0] is not None
+
     def update_tokens(self, refresh_token, access_token, expiration):
         db = get_db()
 
